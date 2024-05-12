@@ -1,47 +1,26 @@
-org 0x7C00
+org 0x7c00                  ; bootloader address
 bits 16
 
-%define ENDL 0x0D, 0x0A
-
 start:
-	jmp main
+    jmp main
 
-puts:
-	push si
-	push ax
-
-.loop:
-	lodsb
-	or al,al
-	jz .done
-
-	mov ah, 0x0e
-	int 0x10
-
-	jmp .loop
-
-.done:
-	pop ax
-	pop si
-	ret
-	
 main:
-	mov ax, 0
-	mov ds, ax
-	mov es, ax
+    mov ah, 0x0e            ; bios tele-type output mode
+    mov bp, msg             ; address of message
+    mov cx, len             ; length of message
 
-	mov ss, ax
-	mov sp, 0x7C00
+print:
+    mov al, [bp]            ; moves character to al
+    int 0x10                ; bios video interrupt
+    inc bp                  ; increment base pointer (bp)
+    dec cx                  ; decrement counter
+    jnz print               ; jump if not zero
 
-	mov si, msg_hello
-	call puts
+hang:
+    jmp hang                ; freeze the system
 
-	hlt
+msg db 'Hello World!!', 0x0d, 0x0a
+len equ $ - msg             ; string length
 
-.halt:
-	jmp .halt
-
-msg_hello: db 'Hello World!', ENDL, 0
-times 510-($-$$) db 0
-dw 0AA55h
-
+times 510 - ($ - $$) db 0   ; pad the boot sector with zeros
+dw 0xaa55                   ; boot signature
